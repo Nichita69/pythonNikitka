@@ -1,19 +1,23 @@
+import datetime
+
+import users
 from django.contrib.auth.models import User
+from django.db.models import Sum
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.serializers import Serializer
-from rest_framework.status import HTTP_200_OK
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import filters
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from drf_util.decorators import serialize_decorator
 
+import task
 from config.settings import EMAIL_HOST_USER
-from task.models import Task, Comment
+from task.models import Task, Comment, Timer
 from task.serializers import TaskSerializer, CreateTaskSerializer, AssignTaskToUser, ListTaskSerializer, \
-    CommentSerializer, CreateCommentSerializer
+    CommentSerializer, CreateCommentSerializer, TimerSerializer, CreateTimerSerializer, ListTimerLogSerializer, TaskTimeSerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -39,7 +43,9 @@ class CommentViewSet(viewsets.ModelViewSet):
 class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin, GenericViewSet):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
-    permission_classes = [IsAuthenticated, ]
+    # permission_classes = [IsAuthenticated, ]
+    permission_classes = [AllowAny, ]
+    authentication_classes = ()
     filter_backends = [filters.SearchFilter]
     search_fields = ['title']
 
@@ -84,7 +90,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         task = serializer.update(task, serializer.validated_data)
         task.user.email_user(
             subject='Adaugarea tasc',
-            message='Dali znacenii taska useru ',
+            message='Dali znacenii taska useru,i otpravili soobsenie na postu ',
             from_email=EMAIL_HOST_USER
         )
         return Response(TaskSerializer(task).data)
@@ -99,7 +105,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         for user in users:
             user.email_user(
                 subject='Commented task',
-                message='Hello my name is zuzi',
+                message='Am commentat acest task si am gasit coment task duoa id',
                 from_email=EMAIL_HOST_USER
             )
 
@@ -110,3 +116,60 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         task = self.get_object()
         comments = Comment.objects.filter(task=task)
         return Response(CommentSerializer(comments, many=True).data)
+
+    @action(detail=True, methods=['post'], serializer_class=Serializer, url_path="start_timer")
+    def start_timer(self, request, *args, **kwargs):
+        task = self.get_object()
+        user = request.user
+        timer = Timer.objects.create(
+            started_at=timezone.now(),
+            task=task,
+            user=user,
+            is_running=True
+
+        )
+        return Response(timer.id)
+
+    @action(detail=True, methods=['post'], serializer_class=Serializer, url_path='stop_timer')
+    def stop_timer(self, request, *args, **kwargs):
+        task = self.get_object()
+        timer = Timer.objects.filter(task_id=task.id).last()
+        timer.stopped_at = timezone.now()
+        timer.duration = timer.stopped_at - timer.started_at
+        timer.is_stopped = True
+        timer.is_running = False
+        timer.save()
+        return Response(timer.id)
+
+    @action(detail=True, methods=['get'], serializer_class=ListTimerLogSerializer, url_path="list_log")
+    def list_log(self, request, *args, **kwargs):
+
+        task = self.get_object()
+        timelogs = Timer.objects.filter(task=task)
+
+        return Response(ListTimerLogSerializer(timelogs, many=True).data)
+
+    @action(detail=True, methods=['post'], serializer_class=CreateTimerSerializer, url_path="time_log")
+    def time_log(self, request, *args, **kwargs):
+        task = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        timer = serializer.save(
+            user=request.user,
+            task=task,
+            stopped_at=validated_data["started_at"] + validated_data["duration"],
+            is_stopped=True,
+
+        )
+        return Response(TimerSerializer(timer).data)
+
+    @action(detail=False, methods=['get'], serializer_class=TaskTimeSerializer, url_path="list_time")
+    def list_time(self, request, *args, **kwargs):
+        today = datetime.datetime.now().date()
+        start = today.replace(day=1)
+        task = self.get_queryset().filter(
+            timer__started_at__gte=start,
+            timer__started_at__lte=today
+        ).annotate(duration=Sum('timer__duration'))
+        return Response(TaskTimeSerializer(task, many=True).data)
