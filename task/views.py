@@ -1,4 +1,3 @@
-
 from django.contrib.auth.models import User
 
 from rest_framework import viewsets
@@ -10,12 +9,12 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from drf_util.decorators import serialize_decorator
 
 from config.settings import EMAIL_HOST_USER
 from task.models import Task, Comment
 from task.serializers import TaskSerializer, CreateTaskSerializer, AssignTaskToUser, ListTaskSerializer, \
     CommentSerializer, CreateCommentSerializer
-from drf_util.decorators import serialize_decorator
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -36,7 +35,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         comment = serializer.save(user=request.user)
 
-        return Response(comment.id)
+        return Response(CommentSerializer(comment).data)
 
 
 class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin, GenericViewSet):
@@ -66,7 +65,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
             from_email=EMAIL_HOST_USER
         )
 
-        return Response(task.id)
+        return Response(TaskSerializer(task).data)
 
     @action(detail=False, methods=['get'], url_path='my-tasks')
     def my_tasks(self, request, *args, **kwargs):
