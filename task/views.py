@@ -3,12 +3,11 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
 from rest_framework.serializers import Serializer
-from rest_framework.status import HTTP_200_OK
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_util.decorators import serialize_decorator
+
 
 from config.settings import EMAIL_HOST_USER
 from task.models import Task, Comment
@@ -84,7 +83,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         task = serializer.update(task, serializer.validated_data)
         task.user.email_user(
             subject='Adaugarea tasc',
-            message='Dali znacenii taska useru ',
+            message='Dali znacenii taska useru,i otpravili soobsenie na postu ',
             from_email=EMAIL_HOST_USER
         )
         return Response(TaskSerializer(task).data)
@@ -99,7 +98,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         for user in users:
             user.email_user(
                 subject='Commented task',
-                message='Hello my name is zuzi',
+                message='Am commentat acest task si am gasit coment task duoa id',
                 from_email=EMAIL_HOST_USER
             )
 
