@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
@@ -28,14 +27,13 @@ class CommentViewSet(viewsets.ModelViewSet):
         else:
             return super(CommentViewSet, self).get_serializer_class()
 
-    @serialize_decorator(CommentSerializer)
     def create(self, request, *args, **kwargs):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        comment = serializer.save(user=request.user)
+        serializer.save(user=request.user)
 
-        return Response(CommentSerializer(comment).data)
+        return Response(serializer.data)
 
 
 class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin, GenericViewSet):
@@ -65,7 +63,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
             from_email=EMAIL_HOST_USER
         )
 
-        return Response(TaskSerializer(task).data)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='my-tasks')
     def my_tasks(self, request, *args, **kwargs):
@@ -105,7 +103,7 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
                 from_email=EMAIL_HOST_USER
             )
 
-        return Response({"status": HTTP_200_OK})
+        return Response(TaskSerializer(task).data)
 
     @action(detail=True, methods=['get'], serializer_class=Serializer, url_path="task_comments")
     def task_comments(self, request, *args, **kwargs):
