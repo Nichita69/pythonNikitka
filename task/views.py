@@ -1,6 +1,5 @@
 import datetime
 
-import users
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
@@ -10,10 +9,9 @@ from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateMode
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 from rest_framework import filters
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-import task
 from config.settings import EMAIL_HOST_USER
 from task.models import Task, Comment, Timer
 from task.serializers import TaskSerializer, CreateTaskSerializer, AssignTaskToUser, ListTaskSerializer, \
@@ -43,9 +41,7 @@ class CommentViewSet(viewsets.ModelViewSet):
 class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin, GenericViewSet):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
-    # permission_classes = [IsAuthenticated, ]
-    permission_classes = [AllowAny, ]
-    authentication_classes = ()
+    permission_classes = [IsAuthenticated, ]
     filter_backends = [filters.SearchFilter]
     search_fields = ['title']
 

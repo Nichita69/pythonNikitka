@@ -1,15 +1,11 @@
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from drf_util.decorators import serialize_decorator
-from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 import datetime
 
-from task.models import Timer
-
-from users.serializers import UserSerializer, ListTimerLogSerializer
+from users.serializers import UserSerializer
 
 
 class RegisterUserView(GenericAPIView):
