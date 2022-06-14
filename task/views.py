@@ -1,5 +1,5 @@
 import datetime
-
+from django.views.decorators.cache import cache_page
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
@@ -15,7 +15,8 @@ from rest_framework.response import Response
 from config.settings import EMAIL_HOST_USER
 from task.models import Task, Comment, Timer
 from task.serializers import TaskSerializer, CreateTaskSerializer, AssignTaskToUser, ListTaskSerializer, \
-    CommentSerializer, CreateCommentSerializer, TimerSerializer, CreateTimerSerializer, ListTimerLogSerializer, TaskTimeSerializer
+    CommentSerializer, CreateCommentSerializer, TimerSerializer, CreateTimerSerializer, ListTimerLogSerializer, \
+    TaskTimeSerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -160,12 +161,15 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         )
         return Response(TimerSerializer(timer).data)
 
+    @cache_page(60 * 15)
     @action(detail=False, methods=['get'], serializer_class=TaskTimeSerializer, url_path="list_time")
     def list_time(self, request, *args, **kwargs):
-        today = datetime.datetime.now().date()
-        start = today.replace(day=1)
-        task = self.get_queryset().filter(
+        today = timezone.now()
+        start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        task = self.get_queryset().prefetch_related(
+            'timer_set',
+        ).filter(
             timer__started_at__gte=start,
             timer__started_at__lte=today
-        ).annotate(duration=Sum('timer__duration'))
+        )[:20].annotate(duration=Sum('timer__duration'))
         return Response(TaskTimeSerializer(task, many=True).data)
