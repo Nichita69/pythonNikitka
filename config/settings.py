@@ -82,7 +82,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'HOST': 'localhost',
+        'HOST': 'db',
         'PORT': 5432,
         'USER': 'postgres',
         'PASSWORD': "457849da"
@@ -172,8 +172,8 @@ NOSE_ARGS = [
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
-        'LOCATION': '',
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379',
         'TIMEOUT': 60,
         'OPTIONS': {
             'MAX_ENTRIES': 10
