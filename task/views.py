@@ -127,6 +127,12 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         )
         return Response(timer.id)
 
+    def get_queryset(self):
+        queryset = Task.objects.all()
+        if self.request.query_params.get('is_completed'):
+            queryset = queryset.filter(is_completed=self.request.query_params.get('is_completed'))
+        return queryset
+
     @action(detail=True, methods=['post'], serializer_class=Serializer, url_path='stop_timer')
     def stop_timer(self, request, *args, **kwargs):
         task = self.get_object()
@@ -145,6 +151,10 @@ class TaskViewSet(ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateM
         timelogs = Timer.objects.filter(task=task)
 
         return Response(ListTimerLogSerializer(timelogs, many=True).data)
+
+    @action(detail=True,methods=['get'],serializer_class=ListTimerLogSerializer,url_path="list_log_by_date")
+
+    def list_log(self,request,*args,**kwargs):
 
     @action(detail=True, methods=['post'], serializer_class=CreateTimerSerializer, url_path="time_log")
     def time_log(self, request, *args, **kwargs):

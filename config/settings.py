@@ -9,8 +9,11 @@ https://docs.djangoproject.com/en/4.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
-
+import os
+import dotenv
 from pathlib import Path
+import environ
+from coreschema.encodings.html import env
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,7 +87,7 @@ DATABASES = {
         'NAME': 'postgres',
         'PORT': 5432,
         'USER': 'postgres',
-        'PASSWORD': "457849da"
+        'PASSWORD': "457849"
     }
 }
 
@@ -155,8 +158,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'mersbmw3443@gmail.com'
-EMAIL_HOST_PASSWORD = '3977niku'
+EMAIL_USER = env('EMAIL_USER')
+EMAIL_PASSWORD = env('EMAIL_PASSWORD')
+
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
